@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冷吐槽生成器</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 40px; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+    <div class="container" style="text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+        <h1>冷吐槽生成器</h1>
+        <p style="margin-block: 20px 10px;color: gray;">在公众号「赛博禅心」回复：「智谱API」</p>
+        <p style="margin-block: 10px 20px;color: gray;">可获得无限使用的智谱 API key</p>
+            <div class="input-group" style="display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 20px;">
+            <input type="password" id="apiKey" placeholder="Enter Zhipu API Key" style="padding: 10px; width: 300px; border-radius: 5px; border: 1px solid #ddd;" />
+            <input type="text" id="prompt" value="A simple painting with an animal, in oil paint, minimalistic, cute and funny." style="padding: 10px; width: 300px; border-radius: 5px; border: 1px solid #ddd;" />
+        </div>
+        <button id="generateButton" onclick="generateImage()" style="padding: 10px 20px; margin: 10px auto; border: none; border-radius: 5px; background-color: #00a1ff; color: white; font-weight: bold; cursor: pointer; display: block;">运行</button>
+        <div id="placeholder" style="display: none;">生成中，大概需要30秒...</div>
+        <section id="outputSection" style="display: none; border-width: 5px; border-style: solid; border-color: rgba(0, 0, 0, 0.5); background: white; padding: 10px; margin-block: 1em; border-radius: 20px;">
+            <img id="generatedImage" alt="Generated Image" style="max-width: 400px; color: rgb(0, 0, 0); border-radius: 20px;">
+            <section style="overflow: overlay;text-align: right;font-size: 14px;margin-block: 1em;color: rgb(0 161 255);display: flex;gap: 12px;align-items: center;justify-content: right;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="#00a1ff"><path d="M23,2H1A1,1,0,0,0,0,3V21a1,1,0,0,0,1,1H23a1,1,0,0,0,1-1V3A1,1,0,0,0,23,2ZM22,4V14.3L17.759,9.35A1,1,0,0,0,17.005,9a.879.879,0,0,0-.757.342l-6.3,7.195L6.707,13.293A.988.988,0,0,0,5.955,13a1,1,0,0,0-.723.358L2,17.238V4Z" fill="#00a1ff"></path><circle cx="9" cy="8" r="2" fill="#00a1ff"></circle></g></svg>
+                <p>CogView-3-Plus</p>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="#00a1ff"><path d="M21,1H3C1.346,1,0,2.346,0,4V15c0,1.654,1.346,3,3,3H7.52l3.699,4.625c.19,.237,.478,.375,.781,.375s.591-.138,.781-.375l3.699-4.625h4.52c1.654,0,3-1.346,3-3V4c0-1.654-1.346-3-3-3ZM13,13H7c-.553,0-1-.448-1-1s.447-1,1-1h6c.553,0,1,.448,1,1s-.447,1-1,1Zm4-5H7c-.553,0-1-.448-1-1s.447-1,1-1h10c.553,0,1,.448,1,1s-.447,1-1,1Z" fill="#00a1ff"></path></g></svg>
+                <p>GLM-4-Plus</p>
+            </section>
+            <p id="jokeText" style="overflow: overlay; text-align: center; font-size: 24px; margin-block: 20px; color: rgba(0, 0, 0, 0.7);"></p>
+        </section>
+        <button id="copyButton" onclick="copyDiv()" style="padding: 10px 20px; margin: 10px auto; border: none; border-radius: 5px; background-color: #00a1ff; color: white; font-weight: bold; cursor: pointer; display: none;">复制</button>
+    </div>
+
+    <script>
+        function generateImage() {
+            const apiKey = document.getElementById('apiKey').value;
+            const prompt = document.getElementById('prompt').value;
+            const placeholder = document.getElementById('placeholder');
+            const outputSection = document.getElementById('outputSection');
+            const imageElement = document.getElementById('generatedImage');
+            const jokeText = document.getElementById('jokeText');
+            const generateButton = document.getElementById('generateButton');
+            const copyButton = document.getElementById('copyButton');
+
+            // Disable the button during generation
+            generateButton.disabled = true;
+            generateButton.style.backgroundColor = '#b3d4fc';
+            placeholder.style.display = 'block';
+            outputSection.style.display = 'none';
+            copyButton.style.display = 'none';
+
+            fetch('https://open.bigmodel.cn/api/paas/v4/images/generations', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${apiKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "model": "cogview-3-plus",
+                    "prompt": prompt
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const imageUrl = data.data[0].url;
+                imageElement.src = imageUrl; 
+                return fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "model": "glm-4v-plus",
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "text",
+                                        "text": "输出图片的描述，越仔细越好，一定不要提及水印'AI生成'，**不要提到 AI**，**不要提到 AI**，**不要提到 AI**。然后找到图片的特征，尤其是大家不会关注的细节"
+                                    },
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {"url": imageUrl}
+                                    }
+                                ]
+                            }
+                        ]
+                    })
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                const description = data.choices[0].message.content;
+
+                // 生成笑话的请求
+                return fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "model": "glm-4-plus",
+                        "model": "glm-4-plus",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "你是一位擅长“冷吐槽”的脱口秀大师，以机智、意外的幽默感著称，你总会以省略主语的方式，吐槽生活、生活中的事情，10个字以内的。同时，你的吐槽总会结合用户给你的图片，尤其是大家不会关注的细节。你的吐槽里，永远不要出现AI。"
+                            },
+                            {
+                                "role": "user",
+                                "content": "这张图片展示了一名男子田径运动员正在投掷铅球的瞬间。他身穿红色和黑色的运动服，胸前贴有写有“MUROFUSHI”和“TDK”字样的比赛号码布，以及“Daegu2011”，表明这是2011年大邱世界田径锦标赛的场景。他的表情集中而紧张，双手紧握铅球，准备发力。背景模糊，但可以看出是在一个体育场内，焦点集中在运动员和他的动作上。"
+                            },
+                            {
+                                "role": "assistant",
+                                "content": "物理催眠师"
+                            },
+                            {
+                                "role": "user",
+                                "content": "这张图片展示了一个穿着黑色和金色装甲、头戴红色面具的角色坐在电脑前。这个角色似乎是日本特摄系列中的假面骑士，具体来说是假面骑士Amazon Neo。他正专注地看着屏幕，双手放在键盘上。背景看起来像是一个办公室或工作室环境。"
+                            },
+                            {
+                                "role": "assistant",
+                                "content": "变身 解除方法"
+                            },
+                            {
+                                "role": "user",
+                                "content": description + "注意：你的吐槽里不要出现 AI"
+                            }
+                        ]
+
+                    })
+                });
+            })
+            .then(response => response.json())
+            .then(data => {
+                const joke = data.choices[0].message.content;
+                jokeText.textContent = joke;
+                outputSection.style.display = 'block';
+                placeholder.style.display = 'none';
+                copyButton.style.display = 'block';
+                generateButton.disabled = false; // Enable the button after generation
+                generateButton.style.backgroundColor = '#00a1ff';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                placeholder.innerHTML = 'Error generating image or joke.';
+                placeholder.style.display = 'block';
+                generateButton.disabled = false; // Enable the button after failure
+                generateButton.style.backgroundColor = '#00a1ff';
+            });
+        }
+
+        async function copyDiv() {
+            const outputSection = document.getElementById('outputSection');
+            try {
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/html': new Blob([outputSection.outerHTML], { type: 'text/html' })
+                    })
+                ]);
+                alert('复制成功，可粘贴到公众号！');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        }
+    </script>
+</body>
+</html>
